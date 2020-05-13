@@ -1,4 +1,5 @@
 from . import db
+from sqlalchemy import asc, desc
 from sqlalchemy.event import listen
 
 class Task(db.Model):
@@ -14,6 +15,11 @@ class Task(db.Model):
     def new(cls, title, description, deadline):
         return Task(title=title, description=description, deadline= deadline)
 
+    @classmethod
+    def get_by_page(cls, order, page, per_page=10):
+        sort = desc(Task.id) if order == 'desc' else asc(Task.id)
+        return Task.query.order_by(sort).paginate(page, per_page).items
+
     def save(self):
         try:
             db.session.add(self)
@@ -22,16 +28,25 @@ class Task(db.Model):
         except:
             return False
 
+    def delete(self):
+        try:
+            db.session.delete(self)
+            db.session.commit()
+            return True
+        except:
+            return False
+
     def __str__(self):
         return self.title
 
-    def serialize(self):
-        return {
-            'id': self.id,
-            'title': self.title,
-            'description': self.description,
-            'deadline': self.deadline
-        }
+    # Eliminado porque ahora se serializara con marshmallow
+    #def serialize(self):
+    #    return {
+    #        'id': self.id,
+    #        'title': self.title,
+    #        'description': self.description,
+    #        'deadline': self.deadline
+    #    }
 
 def insert_tasks(*args, **kwargs):
     db.session.add(
